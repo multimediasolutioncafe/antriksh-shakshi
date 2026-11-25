@@ -13262,155 +13262,74 @@ body.home.blog.logged-in.admin-bar.ast-header-break-point.ast-separate-container
         transition: opacity 0.6s ease;
       }
     </style>
-    <script id="custom-scratch-card-fix-js">
-      ;(function () {
-        function initScratchCards() {
-          document
-            .querySelectorAll('.im-scratch-card__card')
-            .forEach(function (card) {
-              if (card.dataset.customScratchReady === '1') return
-              var canvas = card.querySelector('.im-scratch-card__canvas')
-              if (!canvas) return
-              card.dataset.customScratchReady = '1'
-              card.classList.remove(
-                'im-scratch-card__card--revealed',
-                'is-scratch-revealed'
-              )
-              canvas.style.display = 'block'
-              var ctx = canvas.getContext('2d', { willReadFrequently: true })
-              if (!ctx) return
-              var width = 550,
-                height = 308,
-                drawing = false,
-                last = null,
-                checkCounter = 0
-              function paintCoating() {
-                var dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1))
-                var rect = canvas.getBoundingClientRect()
-                width = Math.max(1, Math.round(rect.width * dpr))
-                height = Math.max(1, Math.round(rect.height * dpr))
-                canvas.width = width
-                canvas.height = height
-                ctx.globalCompositeOperation = 'source-over'
-                var grad = ctx.createLinearGradient(0, 0, width, height)
-                grad.addColorStop(0, '#f8e5a6')
-                grad.addColorStop(0.28, '#d5a642')
-                grad.addColorStop(0.55, '#f7df91')
-                grad.addColorStop(0.78, '#c28b27')
-                grad.addColorStop(1, '#f4d77f')
-                ctx.fillStyle = grad
-                ctx.fillRect(0, 0, width, height)
-                // Fine metallic texture and a clear scratch prompt.
-                ctx.globalAlpha = 0.16
-                ctx.strokeStyle = '#fff9df'
-                ctx.lineWidth = 1
-                for (var x = -height; x < width; x += 18) {
-                  ctx.beginPath()
-                  ctx.moveTo(x, 0)
-                  ctx.lineTo(x + height, height)
-                  ctx.stroke()
-                }
-                ctx.globalAlpha = 1
-                ctx.textAlign = 'center'
-                ctx.textBaseline = 'middle'
-                ctx.fillStyle = '#80551a'
-                ctx.font =
-                  '600 ' +
-                  Math.max(16, Math.round(width / 31)) +
-                  'px Georgia, serif'
-                ctx.fillText(
-                  '✧  SCRATCH TO REVEAL  ✧',
-                  width / 2,
-                  height / 2 - 8
-                )
-                ctx.font =
-                  Math.max(11, Math.round(width / 48)) + 'px Arial, sans-serif'
-                ctx.fillStyle = 'rgba(100,65,20,.8)'
-                ctx.fillText(
-                  'A little surprise awaits you',
-                  width / 2,
-                  height / 2 + 25
-                )
-                ctx.globalCompositeOperation = 'destination-out'
-              }
-              function pointFromEvent(e) {
-                var r = canvas.getBoundingClientRect()
-                return {
-                  x: (e.clientX - r.left) * (canvas.width / r.width),
-                  y: (e.clientY - r.top) * (canvas.height / r.height)
-                }
-              }
-              function eraseLine(a, b) {
-                ctx.globalCompositeOperation = 'destination-out'
-                ctx.lineCap = 'round'
-                ctx.lineJoin = 'round'
-                ctx.lineWidth = Math.max(34, canvas.width / 12)
-                ctx.beginPath()
-                ctx.moveTo(a.x, a.y)
-                ctx.lineTo(b.x, b.y)
-                ctx.stroke()
-              }
-              function revealIfEnough() {
-                checkCounter++
-                if (checkCounter % 5 !== 0) return
-                try {
-                  var data = ctx.getImageData(
-                    0,
-                    0,
-                    canvas.width,
-                    canvas.height
-                  ).data
-                  var transparent = 0
-                  for (var i = 3; i < data.length; i += 4)
-                    if (data[i] < 40) transparent++
-                  if (transparent / (data.length / 4) > 0.48) {
-                    card.classList.add('is-scratch-revealed')
-                    var hint =
-                      card.parentElement &&
-                      card.parentElement.querySelector('.im-scratch-card__hint')
-                    if (hint) hint.classList.add('is-hidden')
-                  }
-                } catch (err) {
-                  /* Canvas may be unavailable in restrictive browsers. */
-                }
-              }
-              canvas.addEventListener('pointerdown', function (e) {
-                if (card.classList.contains('is-scratch-revealed')) return
-                drawing = true
-                last = pointFromEvent(e)
-                if (canvas.setPointerCapture)
-                  canvas.setPointerCapture(e.pointerId)
-                eraseLine(last, { x: last.x + 1, y: last.y + 1 })
-                e.preventDefault()
-              })
-              canvas.addEventListener('pointermove', function (e) {
-                if (!drawing || !last) return
-                var next = pointFromEvent(e)
-                eraseLine(last, next)
-                last = next
-                revealIfEnough()
-                e.preventDefault()
-              })
-              function stopDrawing() {
-                drawing = false
-                last = null
-                revealIfEnough()
-              }
-              canvas.addEventListener('pointerup', stopDrawing)
-              canvas.addEventListener('pointercancel', stopDrawing)
-              canvas.addEventListener('lostpointercapture', stopDrawing)
-              paintCoating()
-              // Repaint to fit the final responsive card size if layout settles after fonts load.
-              window.setTimeout(function () {
-                if (!drawing && !card.classList.contains('is-scratch-revealed'))
-                  paintCoating()
-              }, 500)
-            })
-        }
-        if (document.readyState === 'loading')
-          document.addEventListener('DOMContentLoaded', initScratchCards)
-        else initScratchCards()
-      })()
-    </script>
+    <script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const countdowns = document.querySelectorAll(
+        ".im-countdown-banner__grid[data-countdown]"
+    );
+
+    function updateCountdown() {
+
+        countdowns.forEach(function (countdown) {
+
+            const targetDate = new Date(
+                countdown.getAttribute("data-countdown")
+            ).getTime();
+
+            const now = Date.now();
+
+            let difference = targetDate - now;
+
+            if (difference < 0) {
+                difference = 0;
+            }
+
+            const days = Math.floor(
+                difference / (1000 * 60 * 60 * 24)
+            );
+
+            const hours = Math.floor(
+                (difference / (1000 * 60 * 60)) % 24
+            );
+
+            const minutes = Math.floor(
+                (difference / (1000 * 60)) % 60
+            );
+
+            const seconds = Math.floor(
+                (difference / 1000) % 60
+            );
+
+            const daysElement = countdown.querySelector(
+                "[data-countdown-days]"
+            );
+
+            const hoursElement = countdown.querySelector(
+                "[data-countdown-hours]"
+            );
+
+            const minutesElement = countdown.querySelector(
+                "[data-countdown-mins]"
+            );
+
+            const secondsElement = countdown.querySelector(
+                "[data-countdown-secs]"
+            );
+
+            if (daysElement) daysElement.textContent = days;
+            if (hoursElement) hoursElement.textContent = String(hours).padStart(2, "0");
+            if (minutesElement) minutesElement.textContent = String(minutes).padStart(2, "0");
+            if (secondsElement) secondsElement.textContent = String(seconds).padStart(2, "0");
+
+        });
+    }
+
+    updateCountdown();
+
+    setInterval(updateCountdown, 1000);
+
+});
+</script>
   </body>
 </html>
