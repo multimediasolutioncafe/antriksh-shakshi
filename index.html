@@ -11984,7 +11984,7 @@ body.home.blog.logged-in.admin-bar.ast-header-break-point.ast-separate-container
       >
         <audio
           class="im-music-toggle__audio"
-          src="data/song.mp3"
+          src="/data/song.mp3"
           loop=""
           preload="auto"
         ></audio>
@@ -13027,20 +13027,8 @@ body.home.blog.logged-in.admin-bar.ast-header-break-point.ast-separate-container
     <script
       data-wp-strategy="defer"
       defer=""
-      id="invitation-management-scratch-card-js"
-      src="https://myinvitations.io/wp-content/plugins/invitation-management/build/frontend/scratch-card.js?ver=1794941440"
-    ></script>
-    <script
-      data-wp-strategy="defer"
-      defer=""
       id="invitation-management-fireworks-js"
       src="https://myinvitations.io/wp-content/plugins/invitation-management/build/frontend/fireworks.js?ver=1791980610"
-    ></script>
-    <script
-      data-wp-strategy="defer"
-      defer=""
-      id="invitation-management-music-toggle-js"
-      src="https://myinvitations.io/wp-content/plugins/invitation-management/build/frontend/music-toggle.js?ver=1793558679"
     ></script>
     <script
       data-wp-strategy="defer"
@@ -13239,6 +13227,13 @@ body.home.blog.logged-in.admin-bar.ast-header-break-point.ast-separate-container
     <style id="custom-scratch-card-fix">
       .im-scratch-card__card {
         position: relative !important;
+        isolation: isolate;
+      }
+      .im-scratch-card__content {
+        position: absolute !important;
+        inset: 0;
+        z-index: 1 !important;
+        pointer-events: none;
       }
       .im-scratch-card__canvas {
         display: block !important;
@@ -13250,12 +13245,8 @@ body.home.blog.logged-in.admin-bar.ast-header-break-point.ast-separate-container
         cursor: crosshair;
         touch-action: none;
       }
-      .im-scratch-card__content {
-        z-index: 1;
-      }
-      .im-scratch-card__hint {
-        transition: opacity 0.3s ease;
-      }
+      .im-scratch-card__hint { transition: opacity 0.3s ease; }
+      .im-scratch-card__hint.is-hidden { opacity: 0; }
       .im-scratch-card__card.is-scratch-revealed .im-scratch-card__canvas {
         opacity: 0;
         pointer-events: none;
@@ -13331,47 +13322,220 @@ document.addEventListener("DOMContentLoaded", function () {
 
 });
 </script>
-	  <script>
+  
+<script id="msc-local-interactions">
 document.addEventListener("DOMContentLoaded", function () {
 
-    const musicBox = document.querySelector(".im-music-toggle");
-    if (!musicBox) return;
+  /* ---------------- SCRATCH CARD ---------------- */
+  document.querySelectorAll(".im-scratch-card__card").forEach(function (card) {
+    const canvas = card.querySelector(".im-scratch-card__canvas");
+    if (!canvas || canvas.dataset.localScratchReady === "1") return;
+    canvas.dataset.localScratchReady = "1";
 
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return;
+
+    let isDrawing = false;
+    let revealed = false;
+    let lastPoint = null;
+
+    function paintGoldLayer() {
+      const rect = card.getBoundingClientRect();
+      const cssWidth = Math.max(1, Math.round(rect.width));
+      const cssHeight = Math.max(1, Math.round(rect.height));
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      canvas.width = Math.round(cssWidth * dpr);
+      canvas.height = Math.round(cssHeight * dpr);
+      canvas.style.width = "100%";
+      canvas.style.height = "100%";
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.globalCompositeOperation = "source-over";
+
+      const gradient = ctx.createLinearGradient(0, 0, cssWidth, cssHeight);
+      gradient.addColorStop(0, "#9b6a16");
+      gradient.addColorStop(0.18, "#f7df91");
+      gradient.addColorStop(0.38, "#c9952e");
+      gradient.addColorStop(0.58, "#fff0b5");
+      gradient.addColorStop(0.78, "#c28a22");
+      gradient.addColorStop(1, "#f3d77d");
+
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, cssWidth, cssHeight);
+
+      // Fine golden texture and decorative border
+      for (let i = 0; i < 850; i++) {
+        const x = Math.random() * cssWidth;
+        const y = Math.random() * cssHeight;
+        ctx.fillStyle = i % 2 ? "rgba(255,255,255,.16)" : "rgba(120,75,8,.10)";
+        ctx.fillRect(x, y, 1.2, 1.2);
+      }
+
+      ctx.strokeStyle = "rgba(255,255,255,.55)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(12, 12, cssWidth - 24, cssHeight - 24);
+
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#fffaf0";
+      ctx.font = "600 13px Georgia, serif";
+      ctx.letterSpacing = "3px";
+      ctx.fillText("A LITTLE SURPRISE", cssWidth / 2, cssHeight * 0.39);
+
+      ctx.fillStyle = "#fff";
+      ctx.font = "26px Georgia, serif";
+      ctx.fillText("✦  SCRATCH HERE  ✦", cssWidth / 2, cssHeight * 0.54);
+
+      ctx.fillStyle = "rgba(92,55,10,.85)";
+      ctx.font = "11px Arial, sans-serif";
+      ctx.fillText("REVEAL THE WEDDING DATE", cssWidth / 2, cssHeight * 0.68);
+    }
+
+    function getPoint(event) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top
+      };
+    }
+
+    function eraseAt(point) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
+      ctx.save();
+      ctx.setTransform(scaleX, 0, 0, scaleY, 0, 0);
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 24, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function revealIfScratchedEnough() {
+      if (revealed) return;
+      try {
+        const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        let transparent = 0;
+        // Sample every 16th pixel for performance.
+        for (let i = 3; i < pixels.length; i += 64) {
+          if (pixels[i] < 80) transparent++;
+        }
+        const totalSamples = Math.ceil(pixels.length / 64);
+        if (transparent / totalSamples > 0.38) {
+          revealed = true;
+          card.classList.add("is-scratch-revealed");
+          const hint = card.parentElement.querySelector(".im-scratch-card__hint");
+          if (hint) hint.classList.add("is-hidden");
+        }
+      } catch (err) {
+        console.warn("Scratch reveal check failed:", err);
+      }
+    }
+
+    canvas.addEventListener("pointerdown", function (event) {
+      if (revealed) return;
+      isDrawing = true;
+      lastPoint = getPoint(event);
+      if (canvas.setPointerCapture) canvas.setPointerCapture(event.pointerId);
+      eraseAt(lastPoint);
+      event.preventDefault();
+    });
+
+    canvas.addEventListener("pointermove", function (event) {
+      if (!isDrawing || revealed) return;
+      const point = getPoint(event);
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
+      ctx.save();
+      ctx.setTransform(scaleX, 0, 0, scaleY, 0, 0);
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.lineWidth = 48;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      if (lastPoint) {
+        ctx.moveTo(lastPoint.x, lastPoint.y);
+        ctx.lineTo(point.x, point.y);
+      } else {
+        ctx.moveTo(point.x, point.y);
+        ctx.lineTo(point.x, point.y);
+      }
+      ctx.stroke();
+      ctx.restore();
+
+      lastPoint = point;
+      revealIfScratchedEnough();
+      event.preventDefault();
+    });
+
+    function stopDrawing() {
+      isDrawing = false;
+      lastPoint = null;
+      revealIfScratchedEnough();
+    }
+    canvas.addEventListener("pointerup", stopDrawing);
+    canvas.addEventListener("pointercancel", stopDrawing);
+    canvas.addEventListener("pointerleave", function (event) {
+      if (event.buttons === 0) stopDrawing();
+    });
+
+    paintGoldLayer();
+    window.addEventListener("resize", function () {
+      if (!revealed) paintGoldLayer();
+    });
+  });
+
+  /* ---------------- BACKGROUND MUSIC ---------------- */
+  const musicBox = document.querySelector(".im-music-toggle");
+  if (musicBox) {
     const audio = musicBox.querySelector("audio");
     const button = musicBox.querySelector("button");
 
-    if (!audio || !button) return;
+    if (audio && button) {
+      audio.src = "/data/song.mp3";
+      audio.loop = true;
+      audio.preload = "auto";
+      audio.volume = 0.8;
 
-    audio.volume = 0.8;
+      function setMusicState(playing) {
+        musicBox.classList.toggle("im-music-toggle--playing", playing);
+        button.setAttribute("aria-label", playing ? "Pause background music" : "Play background music");
+        button.setAttribute("title", playing ? "Pause music" : "Play music");
+      }
 
-    // Initial state
-    musicBox.classList.remove("im-music-toggle--playing");
-    button.setAttribute("aria-label", "Play background music");
+      setMusicState(false);
 
-    button.addEventListener("click", async function () {
-
+      button.addEventListener("click", async function () {
         try {
-
-            if (audio.paused) {
-                await audio.play();
-
-                musicBox.classList.add("im-music-toggle--playing");
-                button.setAttribute("aria-label", "Pause background music");
-
-            } else {
-                audio.pause();
-
-                musicBox.classList.remove("im-music-toggle--playing");
-                button.setAttribute("aria-label", "Play background music");
-            }
-
+          if (audio.paused) {
+            await audio.play();
+            setMusicState(true);
+          } else {
+            audio.pause();
+            setMusicState(false);
+          }
         } catch (error) {
-            console.error("Music playback error:", error);
+          setMusicState(false);
+          console.error("Unable to play /data/song.mp3. Check that the file exists in the deployed data folder.", error);
+          alert("Music play nahi ho raha. Check karo: data/song.mp3 file GitHub par upload hai ya nahi.");
         }
+      });
 
-    });
+      audio.addEventListener("play", function () { setMusicState(true); });
+      audio.addEventListener("pause", function () { setMusicState(false); });
+      audio.addEventListener("error", function () {
+        console.error("Audio file could not be loaded:", audio.currentSrc, audio.error);
+      });
+    }
+  }
 
 });
 </script>
-  </body>
+
+</body>
 </html>
