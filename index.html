@@ -13331,5 +13331,47 @@ document.addEventListener("DOMContentLoaded", function () {
 
 });
 </script>
+	  <script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const musicBox = document.querySelector(".im-music-toggle");
+    if (!musicBox) return;
+
+    const audio = musicBox.querySelector("audio");
+    const button = musicBox.querySelector("button");
+
+    if (!audio || !button) return;
+
+    audio.volume = 0.8;
+
+    // Initial state
+    musicBox.classList.remove("im-music-toggle--playing");
+    button.setAttribute("aria-label", "Play background music");
+
+    button.addEventListener("click", async function () {
+
+        try {
+
+            if (audio.paused) {
+                await audio.play();
+
+                musicBox.classList.add("im-music-toggle--playing");
+                button.setAttribute("aria-label", "Pause background music");
+
+            } else {
+                audio.pause();
+
+                musicBox.classList.remove("im-music-toggle--playing");
+                button.setAttribute("aria-label", "Play background music");
+            }
+
+        } catch (error) {
+            console.error("Music playback error:", error);
+        }
+
+    });
+
+});
+</script>
   </body>
 </html>
